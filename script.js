@@ -1,112 +1,112 @@
 class App {
-  constructor(elemento, dimension) {
-    this.arreglo = this.inicializarArreglo(dimension);
-    this.dimension = dimension;
-    this.elemento = elemento;
-    this.alternar = this.alternar.bind(this);
-    this.elemento.addEventListener('click', this.alternar);
-    this.reiniciarTablero = this.reiniciarTablero.bind(this);
-    this.nuevoJuego = this.nuevoJuego.bind(this);
-    this.guardarEstado = this.guardarEstado.bind(this);
+  constructor(element, size) {
+    this.grid = this.initGrid(size);
+    this.size = size;
+    this.element = element;
+    this.toggle = this.toggle.bind(this);
+    this.element.addEventListener('click', this.toggle);
+    this.resetGame = this.resetGame.bind(this);
+    this.newGame = this.newGame.bind(this);
+    this.saveState = this.saveState.bind(this);
 
     // Initialize the state stack
     this.stateStack = [];
 
-    // Creamos dinámicamente los elementos div para el arreglo
-    for (let fila = 0; fila < dimension; fila++) {
-      for (let col = 0; col < dimension; col++) {
+    // We dynamically create div elements for the grid
+    for (let row = 0; row < size; row++) {
+      for (let col = 0; col < size; col++) {
         let div = document.createElement('div');
-        div.style.width = (250 / dimension) + 'px';
-        div.style.height = (250 / dimension) + 'px';
-        div.dataset.location = JSON.stringify({fila, col});
-        elemento.appendChild(div);
+        div.style.width = (250 / size) + 'px';
+        div.style.height = (250 / size) + 'px';
+        div.dataset.location = JSON.stringify({row, col});
+        element.appendChild(div);
       }
     }
 
-    // Agregamos los event listeners para los botones
-    document.getElementById('new-game-btn').addEventListener('click', this.nuevoJuego);
-    document.getElementById('save-state-btn').addEventListener('click', this.guardarEstado);
-    document.getElementById('reset-game-btn').addEventListener('click', this.reiniciarTablero);
+    // We add the event listeners for the buttons
+    document.getElementById('new-game-btn').addEventListener('click', this.newGame);
+    document.getElementById('save-state-btn').addEventListener('click', this.saveState);
+    document.getElementById('reset-game-btn').addEventListener('click', this.resetGame);
   }
 
-  // Método para renderizar el arreglo
-  renderizar(fila, col, retardo) {
-    let div = this.elemento.children[fila * this.dimension + col];
-    div.className = this.arreglo[fila][col] ? ('flip' + (retardo ? ' flip-delay':'')): '';
+  // Method to render the array
+  render(row, col, delay) {
+    let div = this.element.children[row * this.size + col];
+    div.className = this.grid[row][col] ? ('flip' + (delay ? ' flip-delay': '')): '';
   }
 
-  // Método para inicializar el arreglo
-  inicializarArreglo(size) {
-    const rejilla = Array(size);
-    for (let i = 0; i < rejilla.length; i++) {
-      rejilla[i] = Array(size).fill(false);
+  // Method to initialize the array
+  initGrid(size) {
+    const grid = Array(size);
+    for (let i = 0; i < grid.length; i++) {
+      grid[i] = Array(size).fill(false);
     }
-    return rejilla;
+    return grid;
   }
 
-  // Método para alternar las luces y actualizar el arreglo
-  alternar(evento) {
-    const jsonPosicion = evento.target.dataset.location;
-    if(!jsonPosicion) {
+  // Method to toggle the lights and update the array
+  toggle(event) {
+    const locationJSON = event.target.dataset.location;
+    if(!locationJSON) {
       return;
     }
 
-    const posicion = JSON.parse(jsonPosicion);
-    const i = posicion.fila;
-    const j = posicion.col;
-    this.arreglo[i][j] = !this.arreglo[i][j];
-    this.renderizar(i, j, false);
-    const direcciones = [[1,0], [-1,0], [0,1], [0,-1]];
-    for (const dir of direcciones) {
+    const location = JSON.parse(locationJSON);
+    const i = location.fila;
+    const j = location.col;
+    this.grid[i][j] = !this.grid[i][j];
+    this.render(i, j, false);
+    const directions = [[1,0], [-1,0], [0,1], [0,-1]];
+    for (const dir of directions) {
       let ni = i + dir[0];
       let nj = j + dir[1];
-      if (ni >= 0 && ni < this.dimension && nj >= 0 && nj < this.dimension) {
-        this.arreglo[ni][nj] = !this.arreglo[ni][nj];
-        this.renderizar(ni, nj, true);
+      if (ni >= 0 && ni < this.size && nj >= 0 && nj < this.size) {
+        this.grid[ni][nj] = !this.grid[ni][nj];
+        this.render(ni, nj, true);
       }
     }
 
-    // Verificamos que todas las luces del arreglo estén apagadas
-    if (this.arreglo.every((fila) => fila.every((casilla) => casilla === false))) {
+    // We verify all the lights in the grid to be empty
+    if (this.grid.every((row) => row.every((cell) => cell === false))) {
       alert("¡Felicidades! ¡Has ganado!");
-      this.reiniciarTablero();
+      this.resetGame();
     }
   }
 
-  // Método para reiniciar el juego
-  reiniciarTablero() {
+  // Method to reset the game
+  resetGame() {
     // Restore the board to the saved state
-    this.arreglo = this.stateStack.length > 0 ? this.stateStack.pop() : this.inicializarArreglo(this.dimension);
-    for (let fila = 0; fila < this.dimension; fila++) {
-      for (let col = 0; col < this.dimension; col++) {
-        this.renderizar(fila, col, false);
+    this.grid = this.stateStack.length > 0 ? this.stateStack.pop() : this.initGrid(this.size);
+    for (let fila = 0; fila < this.size; fila++) {
+      for (let col = 0; col < this.size; col++) {
+        this.render(fila, col, false);
       }
     }
   }
 
-  // Método para guardar el estado actual del tablero
-  guardarEstado() {
+  // Method to save the current state of the board
+  saveState() {
     // Deep copy the current state of the board and push it onto the state stack
-    const currentState = JSON.parse(JSON.stringify(this.arreglo));
+    const currentState = JSON.parse(JSON.stringify(this.grid));
     this.stateStack.push(currentState);
   }
 
-  nuevoJuego() {
-    this.reiniciarTablero();
-    // Simulamos un nuevo juego eligiendo casillas aleatorias para presionar
-    const numPresses = Math.floor(Math.random() * (this.dimension * this.dimension));
+  newGame() {
+    this.resetGame();
+    // We set up a new game choosing cells at random to click before beggining
+    const numPresses = Math.floor(Math.random() * (this.size * this.size));
     for (let i = 0; i < numPresses; i++) {
-      const randomRow = Math.floor(Math.random() * this.dimension);
-      const randomCol = Math.floor(Math.random() * this.dimension);
-      this.arreglo[randomRow][randomCol] = !this.arreglo[randomRow][randomCol];
-      this.renderizar(randomRow, randomCol, false);
-      const direcciones = [[1,0], [-1,0], [0,1], [0,-1]];
-      for (const dir of direcciones) {
+      const randomRow = Math.floor(Math.random() * this.size);
+      const randomCol = Math.floor(Math.random() * this.size);
+      this.grid[randomRow][randomCol] = !this.grid[randomRow][randomCol];
+      this.render(randomRow, randomCol, false);
+      const directions = [[1,0], [-1,0], [0,1], [0,-1]];
+      for (const dir of directions) {
         let ni = randomRow + dir[0];
         let nj = randomCol + dir[1];
-        if (ni >= 0 && ni < this.dimension && nj >= 0 && nj < this.dimension) {
-          this.arreglo[ni][nj] = !this.arreglo[ni][nj];
-          this.renderizar(ni, nj, true);
+        if (ni >= 0 && ni < this.size && nj >= 0 && nj < this.size) {
+          this.grid[ni][nj] = !this.grid[ni][nj];
+          this.render(ni, nj, true);
         }
       }
     }
@@ -114,8 +114,8 @@ class App {
 
 }
 
-// Mandamos una alerta al usuario solicitándole un tamaño del
-// arreglo y creamos una nueva instancia de la aplicación
-let usuario = prompt("¿De qué tamaño quieres el tablero?");
-let size = parseInt(usuario);
+// We alert the user to request a size for the board. After that, we create a
+// new instance of the application
+let user = prompt("¿De qué tamaño quieres el tablero?");
+let size = parseInt(user);
 new App(document.querySelector('#container'), size);
