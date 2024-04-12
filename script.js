@@ -18,7 +18,7 @@ class App {
         let div = document.createElement('div');
         div.style.width = (250 / size) + 'px';
         div.style.height = (250 / size) + 'px';
-        div.dataset.location = JSON.stringify({row, col});
+        div.dataset.location = JSON.stringify({fila: row, col});
         element.appendChild(div);
       }
     }
