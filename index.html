@@ -1,19 +1,28 @@
 <!DOCTYPE html>
-<html lang = "es">
+<html lang="en">
 <head>
-  <meta charset = "UTF-8" />
-  <title>Simulador Lights Out</title>
-  <link rel = "icon" type = "image/x-icon" href = "./imagenes/icono_bombillo.png">
-  <link rel = "stylesheet" href = "./style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel = "icon" type = "image/x-icon" href = "./imagenes/icono_bombillo.png">
+    <title>Lights Off Game</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100;0,300;0,400;0,500;0,700;0,900;1,100;1,300;1,400;1,500;1,700;1,900&display=swap" rel="stylesheet">
 </head>
 <body>
-  <h2>Lights Out</h2>
-  <div id = "container"></div>
-  <div class = "buttons">
-    <button id = "new-game-btn">Nuevo juego</button>
-    <button id = "save-state-btn">Guardar estado</button>
-    <button id = "reset-game-btn">Restaurar estado</button>
-  </div>
-  <script src = "./script.js"></script>
+    <h1>Lights Off Game</h1>
+    <div class="controls">
+        <button onclick="newGame()" class="button-89">New Game</button>
+        <button onClick="clearGrid()" class="button-89">Clear Grid</button>
+        <button onclick="restoreState()" class="button-89"> Restore State</button>
+        <button id="themeToggleBtn" class="button-89"> Light / Dark </button>
+    </div>
+    <div class="inputButton">
+      <input type="number" id="gridSizeInput" placeholder="Enter grid size" min="2" max="12">
+      <button id="changeSizeBtn" class="button-89">Change</button>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    <script src="script.js"></script>
 </body>
 </html>
