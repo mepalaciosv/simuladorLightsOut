@@ -1,121 +1,147 @@
-class App {
-  constructor(element, size) {
-    this.grid = this.initGrid(size);
-    this.size = size;
-    this.element = element;
-    this.toggle = this.toggle.bind(this);
-    this.element.addEventListener('click', this.toggle);
-    this.resetGame = this.resetGame.bind(this);
-    this.newGame = this.newGame.bind(this);
-    this.saveState = this.saveState.bind(this);
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+let gridSize = 5; // Default grid size
 
-    // Initialize the state stack
-    this.stateStack = [];
+let lights = [];
+let savedLights = [];
+let exploreGrid = false;
 
-    // We dynamically create div elements for the grid
-    for (let row = 0; row < size; row++) {
-      for (let col = 0; col < size; col++) {
-        let div = document.createElement('div');
-        div.style.width = (250 / size) + 'px';
-        div.style.height = (250 / size) + 'px';
-        div.dataset.location = JSON.stringify({fila: row, col});
-        element.appendChild(div);
-      }
-    }
-
-    // We add the event listeners for the buttons
-    document.getElementById('new-game-btn').addEventListener('click', this.newGame);
-    document.getElementById('save-state-btn').addEventListener('click', this.saveState);
-    document.getElementById('reset-game-btn').addEventListener('click', this.resetGame);
-  }
-
-  // Method to render the array
-  render(row, col, delay) {
-    let div = this.element.children[row * this.size + col];
-    div.className = this.grid[row][col] ? ('flip' + (delay ? ' flip-delay': '')): '';
-  }
-
-  // Method to initialize the array
-  initGrid(size) {
-    const grid = Array(size);
-    for (let i = 0; i < grid.length; i++) {
-      grid[i] = Array(size).fill(false);
-    }
-    return grid;
-  }
-
-  // Method to toggle the lights and update the array
-  toggle(event) {
-    const locationJSON = event.target.dataset.location;
-    if(!locationJSON) {
-      return;
-    }
-
-    const location = JSON.parse(locationJSON);
-    const i = location.fila;
-    const j = location.col;
-    this.grid[i][j] = !this.grid[i][j];
-    this.render(i, j, false);
-    const directions = [[1,0], [-1,0], [0,1], [0,-1]];
-    for (const dir of directions) {
-      let ni = i + dir[0];
-      let nj = j + dir[1];
-      if (ni >= 0 && ni < this.size && nj >= 0 && nj < this.size) {
-        this.grid[ni][nj] = !this.grid[ni][nj];
-        this.render(ni, nj, true);
-      }
-    }
-
-    // We verify all the lights in the grid to be empty
-    if (this.grid.every((row) => row.every((cell) => cell === false))) {
-      alert("¡Felicidades! ¡Has ganado!");
-      this.resetGame();
-    }
-  }
-
-  // Method to reset the game
-  resetGame() {
-    // Restore the board to the saved state
-    this.grid = this.stateStack.length > 0 ? this.stateStack.pop() : this.initGrid(this.size);
-    for (let fila = 0; fila < this.size; fila++) {
-      for (let col = 0; col < this.size; col++) {
-        this.render(fila, col, false);
-      }
-    }
-  }
-
-  // Method to save the current state of the board
-  saveState() {
-    // Deep copy the current state of the board and push it onto the state stack
-    const currentState = JSON.parse(JSON.stringify(this.grid));
-    this.stateStack.push(currentState);
-  }
-
-  newGame() {
-    this.resetGame();
-    // We set up a new game choosing cells at random to click before beggining
-    const numPresses = Math.floor(Math.random() * (this.size * this.size));
-    for (let i = 0; i < numPresses; i++) {
-      const randomRow = Math.floor(Math.random() * this.size);
-      const randomCol = Math.floor(Math.random() * this.size);
-      this.grid[randomRow][randomCol] = !this.grid[randomRow][randomCol];
-      this.render(randomRow, randomCol, false);
-      const directions = [[1,0], [-1,0], [0,1], [0,-1]];
-      for (const dir of directions) {
-        let ni = randomRow + dir[0];
-        let nj = randomCol + dir[1];
-        if (ni >= 0 && ni < this.size && nj >= 0 && nj < this.size) {
-          this.grid[ni][nj] = !this.grid[ni][nj];
-          this.render(ni, nj, true);
-        }
-      }
-    }
-  }
-
+function getCssVariable(varName) {
+  return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
 }
 
-// We alert the user to request a size for the board. After that, we create a
-// new instance of the application
-let user = prompt("¿De qué tamaño quieres el tablero?");
-let size = parseInt(user);
-new App(document.querySelector('#container'), size);
+function resizeCanvas() {
+  const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+  canvas.width = size;
+  canvas.height = size;
+}
+
+function draw() {
+  resizeCanvas();
+  const lightSize = canvas.width / gridSize;
+  const lightOnColor = getCssVariable('--light-on-color');
+  const lightOffColor = getCssVariable('--light-off-color');
+  const lightBorderColor = getCssVariable('--light-border-color');
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+    for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+            ctx.fillStyle = lights[i][j] ? lightOnColor : lightOffColor;
+            ctx.fillRect(j * lightSize, i * lightSize, lightSize, lightSize);
+            ctx.strokeStyle = lightBorderColor;
+            ctx.strokeRect(j * lightSize, i * lightSize, lightSize, lightSize);
+        }
+    }
+}
+
+function initLights() {
+  lights = Array.from({ length: gridSize }, () => 
+      Array.from({ length: gridSize }, () => Math.random() > 0.5));
+}
+
+function newGame(size = 5) {
+  gridSize = size;
+  exploreGrid = false;
+  initLights();
+  draw();
+  saveState();
+}
+
+function checkWin() {
+  const allOff = lights.every(row => row.every(light => !light));
+  if (allOff && !exploreGrid) {
+    if(confirm("Congratulations! You've won!")) {
+      newGame(gridSize);
+    }
+  }
+}
+
+canvas.addEventListener('click', function(event) {
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const lightSize = canvas.width / gridSize; // Use dynamically calculated light size
+    const j = Math.floor(x / lightSize);
+    const i = Math.floor(y / lightSize);
+    toggleLight(i, j);
+    toggleLight(i + 1, j);
+    toggleLight(i - 1, j);
+    toggleLight(i, j + 1);
+    toggleLight(i, j - 1);
+    draw();
+    checkWin();
+});
+
+function toggleLight(i, j) {
+    if (i >= 0 && i < gridSize && j >= 0 && j < gridSize) {
+        lights[i][j] = !lights[i][j];
+        animateLightToggle(i, j);
+    }
+}
+
+function animateLightToggle(i, j) {
+  const frames = 10;
+  const interval = 10;
+  const lightSize = canvas.width / gridSize;
+  let count = 0;
+
+  const toggleInterval = setInterval(() => {
+      count++;
+      let progress = count / frames;
+      ctx.fillStyle = lights[i][j] ? `rgba(255, 255, 0, ${progress})` : `rgba(0, 0, 0, ${1 - progress})`;
+      ctx.fillRect(j * lightSize, i * lightSize, lightSize, lightSize);
+      ctx.strokeStyle = getCssVariable('--light-border-color');
+      ctx.strokeRect(j * lightSize, i * lightSize, lightSize, lightSize);
+
+      if (count >= frames) {
+          clearInterval(toggleInterval);
+          draw();
+      }
+  }, interval);
+}
+
+function saveState() {
+    savedLights = lights.map(row => [...row]);
+}
+
+
+function restoreState() {
+    if (savedLights.length > 0) {
+        lights = savedLights.map(row => [...row]);
+        draw();
+    }
+}
+
+function clearGrid () {
+    lights = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => false));
+    exploreGrid = true;
+    draw();
+
+}
+window.addEventListener('resize', draw);
+
+document.getElementById('changeSizeBtn').addEventListener('click', function() {
+  const newSize = parseInt(document.getElementById('gridSizeInput').value);
+  if (newSize && newSize >= 2 && newSize <= 12) {
+      newGame(newSize);
+  } else {
+      alert('Please enter a valid size (between 2 and 12).');
+  }
+});
+
+newGame();
+
+
+
+document.addEventListener('DOMContentLoaded', function() {
+  const themeToggleButton = document.getElementById('themeToggleBtn');
+  const body = document.body;
+
+  themeToggleButton.addEventListener('click', () => {
+      const currentTheme = body.getAttribute('data-theme');
+      if (currentTheme === 'dark') {
+          body.setAttribute('data-theme', 'light');
+      } else {
+          body.setAttribute('data-theme', 'dark');
+      }
+  });
+});

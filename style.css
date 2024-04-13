@@ -1,39 +1,113 @@
-html {
-  font-family: "arial";
+:root {
+  --light-on-color: yellow;
+  --light-off-color: black;
+  --light-border-color: white;
+  --background-color: #333;
+  --background-button-color: white;
+  --text-button-color: white;
 }
 
-h2 {
-  text-align: center;
-  margin-top: 80px;
+[data-theme="dark"]  {
+  --light-on-color: yellow;
+  --light-off-color: black;
+  --light-border-color: white;
+  --background-color: lightgray;
+  --background-button-color: black;
+  --text-button-color: black;
 }
 
-#container {
-  width: 250px;
-  height: 250px;
-  margin: 0 auto;
-  background: #FFDF00;
-  background-position: center center;
-  perspective: 200px;
+body {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100dvh;
+  margin: 0;
+  background-color: var(--background-color);
+  font-family: "Roboto", sans-serif;
 }
 
-#container div {
-  width: 50px;
-  height: 50px;
-  float: left;
-  background: #4682b4;
-  transition: all 0.3s;
-  backface-visibility: visible;
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 10px;
+  align-items: center;
 }
 
-#container div.flip {
-  transform: rotateY(180deg) rotateX(180deg) rotateZ(180deg);
-  opacity: 0;
+button {
+  padding-left: 12px;
+  padding-right: 12px;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  background-color: transparent;
+  color: var(--text-button-color);
+  border: 1px solid var(--background-button-color);
+  border-radius: 5px;
+  font-size: 1rem;
 }
 
-#container div.flip-delay {
-  transition-delay: 0.2s;
+button:hover {
+  cursor: pointer;
 }
 
-#container div:hover {
-  box-shadow: inset 0 0 5px #fff;
+button:active {
+  position: relative;
+  top: 1px;
+}
+
+h1 {
+  color: var(--text-button-color);
+  font-weight: 400;
+  font-size: 20px;
+}
+
+input {
+  min-width: 130px;
+  font-size: 1rem;
+  padding: 5px;
+  background-color: transparent;
+  outline: none;
+  border: none;
+  border-bottom: 1px solid var(--background-button-color);
+  color: var(--text-button-color);
+}
+
+.inputButton {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.button-89 {
+  --b: 1px;   /* border thickness */
+  --s: .3em; /* size of the corner */
+  --color: var(--text-button-color);
+  padding: calc(.5em + var(--s)) calc(.9em + var(--s));
+  color: var(--background-button-color);
+  --_p: var(--s);
+  background:
+    conic-gradient(from 90deg at var(--b) var(--b),#0000 90deg,var(--color) 0)
+    var(--_p) var(--_p)/calc(100% - var(--b) - 2*var(--_p)) calc(100% - var(--b) - 2*var(--_p));
+  transition: .3s linear, color 0s, background-color 0s;
+  outline: var(--b) solid #0000;
+  outline-offset: .6em;
+  font-size: 13px;
+  border: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: manipulation;
+}
+
+.button-89:hover,
+.button-89:focus-visible{
+  --_p: 0px;
+  outline-color: var(--background-text-color);
+  outline-offset: .05em;
+}
+
+.button-89:active {
+  background: var(--color);
+  color: var(--text-button-color);
 }
