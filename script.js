@@ -1,23 +1,27 @@
+// Graphic variables for the canvas
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
+
+// Global state variables
 let gridSize = 5; // Default grid size
+let lightsBoard = []; // Current state of the board
+let savedBoardState = []; // Saved state of the board
+let exploreGrid = false; // Mode for exploring the game's rules
 
-let lights = [];
-let savedLights = [];
-let exploreGrid = false;
-
+// Extract information from the CSS
 function getCssVariable(varName) {
   return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
 }
 
-function resizeCanvas() {
-  const size = Math.min(window.innerWidth, window.innerHeight) * 0.8;
+// Set canvas size
+function setCanvasSize() {
+  const size = Math.min(window.innerWidth, window.innerHeight) * 0.75;
   canvas.width = size;
   canvas.height = size;
 }
 
-function draw() {
-  resizeCanvas();
+function drawBoard() {
+  setCanvasSize();
   const lightSize = canvas.width / gridSize;
   const lightOnColor = getCssVariable('--light-on-color');
   const lightOffColor = getCssVariable('--light-off-color');
@@ -25,7 +29,7 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (let i = 0; i < gridSize; i++) {
         for (let j = 0; j < gridSize; j++) {
-            ctx.fillStyle = lights[i][j] ? lightOnColor : lightOffColor;
+            ctx.fillStyle = lightsBoard[i][j] ? lightOnColor : lightOffColor;
             ctx.fillRect(j * lightSize, i * lightSize, lightSize, lightSize);
             ctx.strokeStyle = lightBorderColor;
             ctx.strokeRect(j * lightSize, i * lightSize, lightSize, lightSize);
@@ -34,28 +38,27 @@ function draw() {
 }
 
 function initLights() {
-  lights = Array.from({ length: gridSize }, () => 
+  lightsBoard = Array.from({ length: gridSize }, () => 
       Array.from({ length: gridSize }, () => Math.random() > 0.5));
 }
 
-function newGame(size = 5) {
-  gridSize = size;
+function newGame() {
   exploreGrid = false;
   initLights();
-  draw();
+  drawBoard();
   saveState();
 }
 
 function checkWin() {
-  const allOff = lights.every(row => row.every(light => !light));
+  const allOff = lightsBoard.every(row => row.every(light => !light));
   if (allOff && !exploreGrid) {
     if(confirm("Congratulations! You've won!")) {
-      newGame(gridSize);
+      newGame();
     }
   }
 }
 
-canvas.addEventListener('click', function(event) {
+canvas.addEventListener('click', (event) => {
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
@@ -67,13 +70,13 @@ canvas.addEventListener('click', function(event) {
     toggleLight(i - 1, j);
     toggleLight(i, j + 1);
     toggleLight(i, j - 1);
-    draw();
+    drawBoard();
     checkWin();
 });
 
 function toggleLight(i, j) {
     if (i >= 0 && i < gridSize && j >= 0 && j < gridSize) {
-        lights[i][j] = !lights[i][j];
+        lightsBoard[i][j] = !lightsBoard[i][j];
         animateLightToggle(i, j);
     }
 }
@@ -87,48 +90,49 @@ function animateLightToggle(i, j) {
   const toggleInterval = setInterval(() => {
       count++;
       let progress = count / frames;
-      ctx.fillStyle = lights[i][j] ? `rgba(255, 255, 0, ${progress})` : `rgba(0, 0, 0, ${1 - progress})`;
+      ctx.fillStyle = lightsBoard[i][j] ? `rgba(255, 255, 0, ${progress})` : `rgba(0, 0, 0, ${1 - progress})`;
       ctx.fillRect(j * lightSize, i * lightSize, lightSize, lightSize);
       ctx.strokeStyle = getCssVariable('--light-border-color');
       ctx.strokeRect(j * lightSize, i * lightSize, lightSize, lightSize);
 
       if (count >= frames) {
           clearInterval(toggleInterval);
-          draw();
+          drawBoard();
       }
   }, interval);
 }
 
 function saveState() {
-    savedLights = lights.map(row => [...row]);
+    savedBoardState = lightsBoard.map(row => [...row]);
 }
 
 
 function restoreState() {
-    if (savedLights.length > 0) {
-        lights = savedLights.map(row => [...row]);
-        draw();
+    if (savedBoardState.length > 0) {
+        lightsBoard = savedBoardState.map(row => [...row]);
+        drawBoard();
     }
 }
 
 function clearGrid () {
-    lights = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => false));
+    lightsBoard = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => false));
     exploreGrid = true;
-    draw();
+    drawBoard();
 
 }
-window.addEventListener('resize', draw);
+window.addEventListener('resize', drawBoard);
 
 document.getElementById('changeSizeBtn').addEventListener('click', function() {
   const newSize = parseInt(document.getElementById('gridSizeInput').value);
   if (newSize && newSize >= 2 && newSize <= 12) {
       newGame(newSize);
+      gridSize = newSize;
   } else {
       alert('Please enter a valid size (between 2 and 12).');
   }
 });
 
-newGame();
+newGame(gridSize);
 
 
 
