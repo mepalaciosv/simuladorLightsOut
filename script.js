@@ -1,3 +1,7 @@
+// ---------------------------------------------------------------
+// Variables
+// ---------------------------------------------------------------
+
 // Graphic variables for the canvas
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -7,6 +11,10 @@ let gridSize = 5; // Default grid size
 let lightsBoard = []; // Current state of the board
 let savedBoardState = []; // Saved state of the board
 let exploreGrid = false; // Mode for exploring the game's rules
+
+// ---------------------------------------------------------------
+// Functions
+// ---------------------------------------------------------------
 
 // Extract information from the CSS
 function getCssVariable(varName) {
@@ -20,6 +28,27 @@ function setCanvasSize() {
   canvas.height = size;
 }
 
+// Save the current board state in case we need to restart the match
+function saveState() {
+  savedBoardState = lightsBoard.map(row => [...row]);
+}
+
+// Restore the current state to the initial game configuration
+function restoreState() {
+  if (savedBoardState.length > 0) {
+      lightsBoard = savedBoardState.map(row => [...row]);
+      drawBoard();
+  }
+}
+
+// Turn all the lights off to help a new user get used to the game
+function clearGrid() {
+  lightsBoard = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => false));
+  exploreGrid = true;
+  drawBoard();
+}
+
+// Draw the game board onto the canvas
 function drawBoard() {
   setCanvasSize();
   const lightSize = canvas.width / gridSize;
@@ -37,11 +66,39 @@ function drawBoard() {
     }
 }
 
-function initLights() {
-  lightsBoard = Array.from({ length: gridSize }, () => 
-      Array.from({ length: gridSize }, () => Math.random() > 0.5));
+// Check if all the lights in the board are off
+function boardIsClear(board) {
+  return board.every((row) => row.every(light => !light));
 }
 
+// Determine the configuration of a new winnable board state
+function initLights() {
+  let gameBoard = Array.from({ length: gridSize }, () => 
+      Array.from({ length: gridSize }, () => false));
+
+  while (boardIsClear(gameBoard)) {
+    const numPresses = Math.floor(Math.random() * (gridSize * gridSize));
+    while (numPresses == 0) {
+      numPresses = Math.floor(Math.random() * (gridSize * gridSize));
+    }
+    for (let i = 0; i < numPresses; i++) {
+      const randomRow = Math.floor(Math.random() * gridSize);
+      const randomCol = Math.floor(Math.random() * gridSize);
+      const directions = [[1,0], [-1,0], [0,1], [0,-1]];
+      gameBoard[randomRow][randomCol] = !gameBoard[randomRow][randomCol];
+      for (const dir of directions) {
+        let ni = randomRow + dir[0];
+        let nj = randomCol + dir[1];
+        if (ni >= 0 && ni < gridSize && nj >= 0 && nj < gridSize) {
+          gameBoard[ni][nj] = !gameBoard[ni][nj];
+        }
+      }
+    }
+  }
+  lightsBoard = gameBoard;
+}
+
+// Set up a new game environment
 function newGame() {
   exploreGrid = false;
   initLights();
@@ -49,36 +106,21 @@ function newGame() {
   saveState();
 }
 
+// Verify if the game is won
 function checkWin() {
-  const allOff = lightsBoard.every(row => row.every(light => !light));
+  const allOff = boardIsClear(lightsBoard);
   if (allOff && !exploreGrid) {
-    if(confirm("Congratulations! You've won!")) {
+    if(confirm("¡Felicitaciones! ¡Ganaste!")) {
       newGame();
     }
   }
 }
 
-canvas.addEventListener('click', (event) => {
-    const rect = canvas.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
-    const lightSize = canvas.width / gridSize; // Use dynamically calculated light size
-    const j = Math.floor(x / lightSize);
-    const i = Math.floor(y / lightSize);
-    toggleLight(i, j);
-    toggleLight(i + 1, j);
-    toggleLight(i - 1, j);
-    toggleLight(i, j + 1);
-    toggleLight(i, j - 1);
-    drawBoard();
-    checkWin();
-});
-
 function toggleLight(i, j) {
-    if (i >= 0 && i < gridSize && j >= 0 && j < gridSize) {
-        lightsBoard[i][j] = !lightsBoard[i][j];
-        animateLightToggle(i, j);
-    }
+  if (i >= 0 && i < gridSize && j >= 0 && j < gridSize) {
+      lightsBoard[i][j] = !lightsBoard[i][j];
+      animateLightToggle(i, j);
+  }
 }
 
 function animateLightToggle(i, j) {
@@ -102,39 +144,39 @@ function animateLightToggle(i, j) {
   }, interval);
 }
 
-function saveState() {
-    savedBoardState = lightsBoard.map(row => [...row]);
-}
+// ---------------------------------------------------------------
+// Event listeners
+// ---------------------------------------------------------------
 
+canvas.addEventListener('click', (event) => {
+  const rect = canvas.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+  const lightSize = canvas.width / gridSize; // Use dynamically calculated light size
+  const j = Math.floor(x / lightSize);
+  const i = Math.floor(y / lightSize);
+  toggleLight(i, j);
+  toggleLight(i + 1, j);
+  toggleLight(i - 1, j);
+  toggleLight(i, j + 1);
+  toggleLight(i, j - 1);
+  drawBoard();
+  checkWin();
+});
 
-function restoreState() {
-    if (savedBoardState.length > 0) {
-        lightsBoard = savedBoardState.map(row => [...row]);
-        drawBoard();
-    }
-}
-
-function clearGrid () {
-    lightsBoard = Array.from({ length: gridSize }, () => Array.from({ length: gridSize }, () => false));
-    exploreGrid = true;
-    drawBoard();
-
-}
 window.addEventListener('resize', drawBoard);
 
 document.getElementById('changeSizeBtn').addEventListener('click', function() {
   const newSize = parseInt(document.getElementById('gridSizeInput').value);
   if (newSize && newSize >= 2 && newSize <= 12) {
-      newGame(newSize);
+    if (newSize != gridSize) {
       gridSize = newSize;
+      newGame();
+    }
   } else {
       alert('Please enter a valid size (between 2 and 12).');
   }
 });
-
-newGame(gridSize);
-
-
 
 document.addEventListener('DOMContentLoaded', function() {
   const themeToggleButton = document.getElementById('themeToggleBtn');
@@ -149,3 +191,10 @@ document.addEventListener('DOMContentLoaded', function() {
       }
   });
 });
+
+// ---------------------------------------------------------------
+// Actual game logic
+// ---------------------------------------------------------------
+
+newGame();
+
